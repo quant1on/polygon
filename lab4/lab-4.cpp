@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <limits>
-#include <ctime>
 
 //тестирующий фреймворк
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
@@ -9,7 +8,7 @@
 
 // реализация алгоритма кластеризации массива посредством полного перебора всех комбинаций значений этого массива
 // кол-во кластеров = 6
-// общая асимптотика ~= O(6^n), общий расход памяти (в абсолютном пике) = 147 + 14n
+// общая асимптотика ~= O(n * 6^n), общий расход памяти (в абсолютном пике) = 147 + 14n
 // условимся, что n - кол-во элементов в массиве, все значения расхода памяти указаны в байт
 
 // структура масок кластеров
@@ -63,9 +62,9 @@ struct cluster_masks{
 // функция подсчета метрики для данной маски
 // асимптотика ~= O(n), расход =  120
 double get_score(std :: vector<short> &mask, std :: vector<double> &arr){
-    std :: vector<double> sum_of_cluster(6, 0), // массив для хранения суммы элементов в каждом кластере, расход = 6 * 8 = 48
-    cluster_average(6);                         // массив для хранения среднего значения кластера, расход = 6 * 8 = 48
-    std :: vector<int> cluster_size(6, 0);      // массив для хранения размера каждого кластера, расход = 6 * 4 = 24
+    double sum_of_cluster[6] = {0, 0, 0, 0, 0, 0}, // массив для хранения суммы элементов в каждом кластере, расход = 6 * 8 = 48
+    cluster_average[6];                            // массив для хранения среднего значения кластера, расход = 6 * 8 = 48
+    int cluster_size[6] = {0, 0, 0, 0, 0, 0};      // массив для хранения размера каждого кластера, расход = 6 * 4 = 24
     for (int i = 0; i < arr.size(); i++){       // O(n)
         sum_of_cluster[mask[i]] += arr[i];
         cluster_size[mask[i]]++;
@@ -87,7 +86,7 @@ std :: vector<std :: vector<double>> clusterize(std :: vector<double> &arr){
     double best_score = std :: numeric_limits<double> :: max(), current_score; // 8 + 8 = 16
     std :: vector<short> best_mask;         // сюда запишем лучшую маску, так что 4n
 
-    while(!masks.done){                     // так как рассмотрим абсолютно все маски -> рассмотрим все числа шестеричной системы от 0 до 5 5 5 ... 5 -> 6^n вариантов, O(6^n)
+    while(!masks.done){                     // так как рассмотрим абсолютно все маски -> рассмотрим все числа шестеричной системы от 0 до 5 5 5 ... 5 -> 6^n вариантов, O(n * 6^n)
         current_score = get_score(masks.curr_mask, arr); // O(n), расход = 120
         if (current_score < best_score){    // если нашли маску лучше -> обновляем
             best_score = current_score;
@@ -101,7 +100,7 @@ std :: vector<std :: vector<double>> clusterize(std :: vector<double> &arr){
 
     return answer;
 }
-//тестики (время выполнения ~20 сек)
+//тестики (время выполнения ~10 сек)
 TEST_CASE("testing clusterization function"){
     std :: vector<double> test1 = {1, 1, 1, 1, 1, 1, 1},    // 7 одинаковых элементов
     test2 = {},     // проверка с пустым массивом данных / массивом данных с менее, чем 6 числами
