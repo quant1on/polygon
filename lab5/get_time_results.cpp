@@ -16,12 +16,12 @@ int main(){
     std :: vector<int> test_arr, whole_test_arr;
     std :: fstream file, data_file;
     file.open("./tests/big_test.txt");
-    data_file.open("time_res_cocktail.txt");
+    data_file.open("time_res_cycle.txt");
     while (file >> temp) whole_test_arr.push_back(temp);
-    for (int i = 98; i <= n; i++){
+    for (int i = 1; i <= n; i++){
         for (int j = 0; j < i * k * 1000; j ++) test_arr.push_back(whole_test_arr[j]);
         start = clock();
-        CocktailShakerSort(test_arr);
+        CycleSort(test_arr);
         total_time = clock() - start;
         data_file << i * k * 1000 << " " << double(total_time) << std :: endl;
         test_arr.clear();
