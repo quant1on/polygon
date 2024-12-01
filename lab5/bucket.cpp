@@ -1,64 +1,13 @@
 #include <iostream>
 #include <vector>
+#include <fstream>
 #include <limits>
 #include <cmath>
 
-void CocktailShakerSort(std :: vector<int> &arr){
-    bool swapped = true;
-    int n = arr.size();
-    for (int i = 0; swapped; i++){
-        swapped = false;
+//тестирующий фреймворк
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "../source/doctest.h"
 
-        for (int j = i; j < n - 1 - i; j++){
-            if (arr[j] > arr[j + 1]){
-                std :: swap(arr[j], arr[j + 1]);
-                swapped = true;
-            }
-        }
-
-        if (!swapped) break;
-
-        swapped = false;
-
-        for (int j = n - i - 2; j > i; j--){
-            if (arr[j-1] > arr[j]){
-                std :: swap(arr[j], arr[j-1]);
-                swapped = true;
-            }
-        }
-    }
-}
-
-void CycleSort(std :: vector<int> &arr){
-    if (arr.size() == 0) return;
-    int n = arr.size(), pos, element;
-    for (int cycle_start = 0; cycle_start < n - 1; cycle_start++){
-        pos = cycle_start;
-        element = arr[cycle_start];
-
-        for (int i = cycle_start + 1; i < n; i++){
-            if (arr[i] < element) pos++;
-        }
-
-        if (pos == cycle_start) continue;
-
-        while (element == arr[pos]) pos++;
-
-        if (cycle_start != pos) std :: swap(element, arr[pos]);
-
-        while (pos != cycle_start){
-            pos = cycle_start;
-
-            for (int i = cycle_start + 1; i < n; i++){
-                if (arr[i] < element) pos++;
-            }
-
-            while (element == arr[pos]) pos++;
-
-            if (arr[pos] != element) std :: swap(element, arr[pos]);
-        }
-    }
-}
 
 void heapify(std :: vector<int> &arr, int curr_root, int not_cmplt){
     int greatest_prev = -2, greatest = -1, l, r;
@@ -91,6 +40,7 @@ void HeapSort(std :: vector<int> &arr){
     }
 }
 
+
 int arr_max(std :: vector<int> &arr){
     int ans = std :: numeric_limits<int> :: min();
     for (int i = 0; i < arr.size(); i++) ans = std :: max(ans, arr[i]);
@@ -121,4 +71,31 @@ void BucketSort(std :: vector<int> &arr){
     for (int i = 0; i < n + 1; i++){
         for (int j = 0; j < buckets[i].size(); j++) arr[index++] = buckets[i][j];
     }
+}
+
+bool check_sorted(std :: vector<int> &arr){
+    bool ans = true;
+    for (int i = 0; i < arr.size() - 1; i++){
+        if (arr[i] > arr[i + 1]) ans = false;
+    }
+
+    return ans;
+}
+
+TEST_CASE("testing BucketSort() function"){
+    std :: vector<int> test1 = {0, 0, 0, 0, 0}, test2 = {1, 2, 3, 4, 5, 6}, test3 = {-123, 12, 21, -3, -231, 321, 1}, test4;
+    BucketSort(test1);
+    BucketSort(test2);
+    BucketSort(test3);
+    
+    std :: fstream file_test4;
+    int temp;
+    file_test4.open("./tests/worst_case_bucket.txt");
+    while(file_test4 >> temp) test4.push_back(temp);
+    BucketSort(test4);
+    
+    CHECK(check_sorted(test1));
+    CHECK(check_sorted(test2));
+    CHECK(check_sorted(test3));
+    CHECK(check_sorted(test4));
 }
