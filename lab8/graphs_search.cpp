@@ -21,7 +21,7 @@ struct node{ // структура узла
         y = lat;
     }
 
-    void add_neighbor(node* neighbor, ld weight){ // функция для добавления соседей
+    void add_neighbor(node* neighbor, ld weight){ // функция для добавления соседей, O(1)
         adj.push_back(std :: pair(neighbor, weight));
     }
 
@@ -68,16 +68,16 @@ struct graph{
         return std :: to_string(lon) + std :: to_string(lat);
     }
 
-    // функция нахождения узла по координатам
+    // функция нахождения узла по координатам, O(1), +88 байт
     node* find_node(ld &lon, ld &lat){
         std :: string key = generateKey(lon, lat);
-        node* found_node = nullptr;
+        node* found_node = nullptr; // +8
 
         // если соответствующий узел есть -> возвращаем указатель на него
-        if (coords_in_nodes.find(key) != coords_in_nodes.end()) return coords_in_nodes[key];
+        if (coords_in_nodes.find(key) != coords_in_nodes.end()) return coords_in_nodes[key]; // O(1) - поиск
         
         // если такого узла нет -> создаем его
-        found_node = new node(lon, lat);
+        found_node = new node(lon, lat); // +80
         found_node->id = nodes.size();
         nodes.push_back(found_node);
         coords_in_nodes[key] = found_node;
@@ -106,13 +106,14 @@ struct graph{
 
         std :: cout << "Done! \n";
     }
-    // функция нахождения приблизительного (близжайшего по координатам) узла без создания новых
+
+    // функция нахождения приблизительного (близжайшего по координатам) узла без создания новых, 88 байт
     node* find_approx_node(ld lon, ld lat){
         ld min_dist = 900000, curr_dist;
         node* closest = nullptr;
-        node* target = new node(lon, lat);
+        node* target = new node(lon, lat); // +88 (указатель + node)
 
-        for (auto n: nodes){
+        for (auto n: nodes){ // O(v), где v - кол-во вершин
             curr_dist = get_dist(n, target);
             if (curr_dist < min_dist){
                 min_dist = curr_dist;
@@ -132,34 +133,34 @@ struct graph{
         }
     };
     
-    // метод нахождения пути на основе обхода bfs
+    // метод нахождения пути на основе обхода bfs, O(v + e), где v - кол-во вершин, e - кол-во ребер, 232 + 8v байт в худшем случае
     std :: vector<node*> bfs(node* n1, node* n2){
-        std :: unordered_map<node*, node*> prev_in_path; // хеш-таблица для сопоставления предыдущего узла в пути
-        std :: vector<node*> path; // сам путь
-        std :: unordered_map<node*, bool> visited; // сопоставление посещения узла и самого узла
+        std :: unordered_map<node*, node*> prev_in_path; // хеш-таблица для сопоставления предыдущего узла в пути, +56
+        std :: vector<node*> path; // сам путь, +24
+        std :: unordered_map<node*, bool> visited; // сопоставление посещения узла и самого узла, +56
 
-        for (auto n: nodes){
+        for (auto n: nodes){ // O(v)
             prev_in_path[n] = nullptr;
             visited[n] = false;
         }
 
-        std :: queue<node*> q; // используем очередь, чтобы рассматривать все пути в ширину
+        std :: queue<node*> q; // используем очередь, чтобы рассматривать все пути в ширину, +80 
 
         q.push(n1); // посещаем первый узел (начальный)
         visited[n1] = true;
 
-        while(!q.empty()){
-            auto curr = q.front();
+        while(!q.empty()){ // в худшем случае пройдемся по всем вершинам и ребрам: O(v + e)
+            auto curr = q.front(); // +8
             q.pop(); // берем узел спереди
 
-            for (auto i: curr->adj){ // рассматриваем всех его соседей
+            for (auto i: curr->adj){ // рассматриваем всех его соседей, худший случай O(e)
                 if (i.first == n2){ // если есть конечный узел -> нашли путь
                     // восстанавливаем путь по предыдущим в пути узлам
                     path.push_back(n2);
                     prev_in_path[n2] = curr;
-                    node* prev = n2;
+                    node* prev = n2; // +8
 
-                    while(prev != n1){
+                    while(prev != n1){ // в худшем случае пройдемся по всем вершинам O(v)
                         prev = prev_in_path[prev];
                         path.push_back(prev);
                     }
@@ -168,8 +169,8 @@ struct graph{
                     return path;
                 }
                 if (!visited[i.first]){ // если еще не посетили данный узел
-                    q.push(i.first); // добавляем в очередь
-                    visited[i.first] = true; // значит, мы его посетили
+                    q.push(i.first); // добавляем в очередь, +8, в общем случае (худшем) + 8 * (v - 1)
+                    visited[i.first] = true; // значит, теперь мы его посетили
                     prev_in_path[i.first] = curr; // для данного узла мы знаем предыдущий в пути от n1
                 }
             }
@@ -180,7 +181,8 @@ struct graph{
 
 
     // метод нахождения пути на основе обхода dfs
-    // все то же самое, что и в bfs, но вместо очереди стек, чтобы сначала рассматривать пути в глубину 
+    // все почти* то же самое, что и в bfs, но вместо очереди стек, чтобы сначала рассматривать пути в глубину, O(v + e), 232 + 8v байт
+    // * - см. порядок рассмотрения смежных узлов
     std :: vector<node*> dfs(node* n1, node* n2){
 
         std :: unordered_map<node*, node*> prev_in_path;
@@ -199,7 +201,9 @@ struct graph{
         while(!q.empty()){
             auto curr = q.top();
             q.pop();
-
+            
+            // здесь рассматриваем узлы в обратном порядке, чтобы на верху стека находился узел, который
+            // шел первее в массиве смежных узлов
             for (int j = curr->adj.size() - 1; j >= 0; j--){
                 auto i = curr->adj[j];
 
@@ -229,12 +233,12 @@ struct graph{
         return path;
     }
 
-    // функция нахождения кратчайшего пути на основе алгоритма Дейкстры
+    // функция нахождения кратчайшего пути на основе алгоритма Дейкстры, 200 + 32v байт, O(v) + O((v + e) * log(v)) = O((v + e) * log(v))
     std :: vector<node*> dijkstra(node* n1, node* n2){
-        std :: unordered_map<node*, ld> dists; // сопоставление узла и кратчайшего расстояния от n1 до него
-        std :: unordered_map<node*, node*> prev_in_path; // сопоставления узла и прыдудщего ему в пути
-        std :: vector<node*> path = {}; // сам путь
-        for (auto n: nodes){
+        std :: unordered_map<node*, ld> dists; // сопоставление узла и кратчайшего расстояния от n1 до него, +56
+        std :: unordered_map<node*, node*> prev_in_path; // сопоставления узла и прыдудщего ему в пути, +56
+        std :: vector<node*> path = {}; // сам путь, +24
+        for (auto n: nodes){ // O(v)
             dists[n] = 9000000; // ставим всем узлам условно бесконечное расстояние (то есть любое другое
                                 // реальное расстояние будет меньше данного)
 
@@ -244,13 +248,16 @@ struct graph{
 
         // приоритетная очередь, в которой сортировка будет происходит по такому прицнипу: узел с кратчайшим расстояние будет
         // в приоритете; для сортировки используем функтор compareWays (см. выше)
-        std :: priority_queue<std :: pair<node*, ld>, std :: vector<std :: pair<node*, ld>>, compareWays> pq;
+        std :: priority_queue<std :: pair<node*, ld>, std :: vector<std :: pair<node*, ld>>, compareWays> pq; // +32 + (худший случай) 32v
         
         pq.push(std :: pair(n1, 0)); // добавляем начальную вершину в очередь
 
-        while (!pq.empty()){
-            auto curr = pq.top();
-            pq.pop(); // берем передний узел (с минимальным на данный момент расстоянием в очереди)
+        // по факту, после извлечения вершины из очереди, мы считаем, что нашли минимальное до нее расстояние ->
+        // повторного обновления ее соседей не будет -> временная сложность складывается из суммарного рассмотрения
+        // вершин и их ребер: O(v * log(v)) + O(e * log(v)) -> O((e + v) * log(v))
+        while (!pq.empty()){ 
+            auto curr = pq.top(); // +32
+            pq.pop(); // берем передний узел (с минимальным на данный момент расстоянием в очереди), O(log(v))
 
             // если нашли конечный узел -> строим путь; данный путь будет минимальным 
             if (curr.first == n2){ 
@@ -267,11 +274,13 @@ struct graph{
                 return path;
             }
 
-            for (auto i: curr.first->adj){ // рассматриваем всех соседей
+            // рассматриваем всех соседей, O(e * log(v)) в общем случае (суммарно: мы обрабатываем каждого соседа, потенциально
+            // добавляя каждого в очередь)
+            for (auto i: curr.first->adj){
                 if (dists[i.first] > curr.second + i.second){ // если нашли более короткий путь через curr
                     prev_in_path[i.first] = curr.first; // меняем путь до данного узла на путь через curr
                     dists[i.first] = dists[curr.first] + i.second; // изменяем минимальное расстояние
-                    pq.push(std :: pair(i.first, dists[i.first])); // смотрим обновление всех его соседей в очереди
+                    pq.push(std :: pair(i.first, dists[i.first])); // смотрим обновление данного соседа в очереди, O(log(v)) в худшем случае, +32
                 }
             }
         }
@@ -280,10 +289,12 @@ struct graph{
     }
 
     // функция нахождения пути на основе модифицированного алгоритма Дейкстры (с использованием эвристики)
+    // в силу схожести с алгоритмом Дейкстры, можно считать, что асимптотика та же - O((v + e) * log(v)),
+    // 256 + 32v байт
     std :: vector<node*> a_star(node* n1, node* n2){
-        std :: unordered_map<node*, ld> dists, dists_h; // создаем также 
-        std :: unordered_map<node*, node*> prev_in_path;
-        std :: vector<node*> path = {};
+        std :: unordered_map<node*, ld> dists, dists_h; // создаем также хеш-таблицу с предполагаемыми расстояниями, 56 + 56 = 112 
+        std :: unordered_map<node*, node*> prev_in_path; // +56
+        std :: vector<node*> path = {}; // +24
         for (auto n: nodes){
             dists[n] = 9000000;
             dists_h[n] = 9000000;
@@ -294,11 +305,11 @@ struct graph{
 
         // сейчас в очереди храним не расстояние от начального узла до данного, а предположительное расстояние
         // (минимальное от n1 до данного + эвристика)
-        std :: priority_queue<std :: pair<node*, ld>, std :: vector<std :: pair<node*, ld>>, compareWays> pq;
+        std :: priority_queue<std :: pair<node*, ld>, std :: vector<std :: pair<node*, ld>>, compareWays> pq; // +32 + (худший случай) 32v
         
         pq.push(std :: pair(n1, dists_h[n1])); // принцип действия очень схож с дейкстрой
         while (!pq.empty()){
-            auto curr = pq.top();
+            auto curr = pq.top(); // +32
             pq.pop();
 
             if (curr.first == n2){
@@ -363,10 +374,14 @@ ld get_path_sum(std :: vector<node*> &path){
 
 int main(){
     std :: fstream file;
+
+    // можно ввести другой файл с графом (тестовые файлы test_file.txt, test_file_2.txt)
     file.open("spb_graph.txt");
     graph a;
     a.read_from_file(file); // читаем узлы из файла
 
+
+    // вводим координаты нужных узлов
     node* n1 = a.find_approx_node(30.369008, 59.885145);
     node* n2 = a.find_approx_node(30.337795,59.926835); // находим приблизительные узлы
 
